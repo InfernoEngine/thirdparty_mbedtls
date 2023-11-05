@@ -40,6 +40,8 @@
 #include <bcrypt.h>
 #include <intsafe.h>
 
+#pragma comment (lib, "Bcrypt.lib")
+
 int mbedtls_platform_entropy_poll(void *data, unsigned char *output, size_t len,
                                   size_t *olen)
 {
