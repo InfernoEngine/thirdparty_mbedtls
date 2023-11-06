@@ -4,16 +4,13 @@
 	<GlobalSolutionName>ThirdParty</GlobalSolutionName>
 	<GlobalNamespace>potato</GlobalNamespace>
 
-	<Library>
+	<StaticLibrary>
 		<Name>thirdparty_mbedtls</Name>
 		<SourceRoot>.</SourceRoot>
 		<ThirdParty>true</ThirdParty>
 		<ExportedIncludeDirectory>include</ExportedIncludeDirectory>
-		<PreprocessorDefines>MI_WIN_NOREDIRECT</PreprocessorDefines>
 		<LocalIncludeDirectory>include</LocalIncludeDirectory>
 		<LocalIncludeDirectory>configs</LocalIncludeDirectory>
-		<ThirdPartySharedGlobalExportDefine>MI_SHARED_LIB</ThirdPartySharedGlobalExportDefine>
-		<ThirdPartySharedLocalBuildDefine>MI_SHARED_LIB_EXPORT</ThirdPartySharedLocalBuildDefine>
 		<ThirdPartySourceFile>
 			library\aes.c
 			library\aesce.c
@@ -122,5 +119,5 @@
 			library\x509_crt.c
 			library\x509_csr.c
 		</ThirdPartySourceFile>
-	</Library>
+	</StaticLibrary>
 </Module>
