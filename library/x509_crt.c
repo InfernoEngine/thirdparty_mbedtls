@@ -61,6 +61,7 @@
 #include <sys/stat.h>
 #if defined(__MBED__)
 #include <platform/mbed_retarget.h>
+#elif defined(__PROSPERO__)
 #else
 #include <dirent.h>
 #endif /* __MBED__ */
@@ -1587,6 +1588,8 @@ int mbedtls_x509_crt_parse_path(mbedtls_x509_crt *chain, const char *path)
 
 cleanup:
     FindClose(hFind);
+#elif defined(__PROSPERO__)
+    return MBEDTLS_ERR_X509_BAD_INPUT_DATA;
 #else /* _WIN32 */
     int t_ret;
     int snp_ret;

@@ -75,7 +75,27 @@ int mbedtls_platform_entropy_poll(void *data, unsigned char *output, size_t len,
  * Since there is no wrapper in the libc yet, use the generic syscall wrapper
  * available in GNU libc and compatible libc's (eg uClibc).
  */
-#if ((defined(__linux__) && defined(__GLIBC__)) || defined(__midipix__))
+#if defined(__PROSPERO__)
+#include <unistd.h>
+#define HAVE_GETRANDOM
+#include <errno.h>
+
+static int getrandom_wrapper(void* buf, size_t buflen, unsigned int flags)
+{
+	/* MemSan cannot understand that the syscall writes to the buffer */
+#if defined(__has_feature)
+#if __has_feature(memory_sanitizer)
+	memset(buf, 0, buflen);
+#endif
+#endif
+
+    for (size_t i = 0; i < buflen; ++i)
+        ((char*)buf)[i] = rand();
+    
+    return buflen;
+}
+
+#elif ((defined(__linux__) && defined(__GLIBC__)) || defined(__midipix__))
 #include <unistd.h>
 #include <sys/syscall.h>
 #if defined(SYS_getrandom)

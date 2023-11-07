@@ -67,10 +67,15 @@ static int wsa_init_done = 0;
 #include <arpa/inet.h>
 #include <sys/time.h>
 #include <unistd.h>
-#include <signal.h>
 #include <fcntl.h>
-#include <netdb.h>
 #include <errno.h>
+
+#if defined(__PROSPERO__)
+    #include <net.h>
+#else
+    #include <signal.h>
+    #include <netdb.h>
+#endif
 
 #define IS_EINTR(ret) ((ret) == EINTR)
 #define SOCKET int
@@ -110,7 +115,7 @@ static int net_prepare(void)
         wsa_init_done = 1;
     }
 #else
-#if !defined(EFIX64) && !defined(EFI32)
+#if !defined(EFIX64) && !defined(EFI32) && !defined(__PROSPERO__)
     signal(SIGPIPE, SIG_IGN);
 #endif
 #endif
@@ -158,6 +163,9 @@ void mbedtls_net_init(mbedtls_net_context *ctx)
 int mbedtls_net_connect(mbedtls_net_context *ctx, const char *host,
                         const char *port, int proto)
 {
+#if defined(__PROSPERO__)
+    return MBEDTLS_ERR_ERROR_CORRUPTION_DETECTED;
+#else
     int ret = MBEDTLS_ERR_ERROR_CORRUPTION_DETECTED;
     struct addrinfo hints, *addr_list, *cur;
 
@@ -197,6 +205,7 @@ int mbedtls_net_connect(mbedtls_net_context *ctx, const char *host,
     freeaddrinfo(addr_list);
 
     return ret;
+#endif
 }
 
 /*
@@ -204,6 +213,7 @@ int mbedtls_net_connect(mbedtls_net_context *ctx, const char *host,
  */
 int mbedtls_net_bind(mbedtls_net_context *ctx, const char *bind_ip, const char *port, int proto)
 {
+#if !defined(__PROSPERO__)
     int n, ret;
     struct addrinfo hints, *addr_list, *cur;
 
@@ -265,7 +275,9 @@ int mbedtls_net_bind(mbedtls_net_context *ctx, const char *bind_ip, const char *
     freeaddrinfo(addr_list);
 
     return ret;
-
+#else
+    return MBEDTLS_ERR_NET_LISTEN_FAILED;
+#endif
 }
 
 #if (defined(_WIN32) || defined(_WIN32_WCE)) && !defined(EFIX64) && \
@@ -318,6 +330,7 @@ int mbedtls_net_accept(mbedtls_net_context *bind_ctx,
                        mbedtls_net_context *client_ctx,
                        void *client_ip, size_t buf_size, size_t *ip_len)
 {
+#if !defined(__PROSPERO__)
     int ret = MBEDTLS_ERR_ERROR_CORRUPTION_DETECTED;
     int type;
 
@@ -419,6 +432,9 @@ int mbedtls_net_accept(mbedtls_net_context *bind_ctx,
     }
 
     return 0;
+#else
+    return MBEDTLS_ERR_NET_BAD_INPUT_DATA;
+#endif
 }
 
 /*
@@ -426,6 +442,7 @@ int mbedtls_net_accept(mbedtls_net_context *bind_ctx,
  */
 int mbedtls_net_set_block(mbedtls_net_context *ctx)
 {
+#if !defined(__PROSPERO__)
 #if (defined(_WIN32) || defined(_WIN32_WCE)) && !defined(EFIX64) && \
     !defined(EFI32)
     u_long n = 0;
@@ -433,16 +450,23 @@ int mbedtls_net_set_block(mbedtls_net_context *ctx)
 #else
     return fcntl(ctx->fd, F_SETFL, fcntl(ctx->fd, F_GETFL) & ~O_NONBLOCK);
 #endif
+#else
+    return 0;
+#endif
 }
 
 int mbedtls_net_set_nonblock(mbedtls_net_context *ctx)
 {
+#if !defined(__PROSPERO__)
 #if (defined(_WIN32) || defined(_WIN32_WCE)) && !defined(EFIX64) && \
     !defined(EFI32)
     u_long n = 1;
     return ioctlsocket(ctx->fd, FIONBIO, &n);
 #else
     return fcntl(ctx->fd, F_SETFL, fcntl(ctx->fd, F_GETFL) | O_NONBLOCK);
+#endif
+#else
+    return 0;
 #endif
 }
 
@@ -452,6 +476,7 @@ int mbedtls_net_set_nonblock(mbedtls_net_context *ctx)
 
 int mbedtls_net_poll(mbedtls_net_context *ctx, uint32_t rw, uint32_t timeout)
 {
+#if !defined(__PROSPERO__)
     int ret = MBEDTLS_ERR_ERROR_CORRUPTION_DETECTED;
     struct timeval tv;
 
@@ -512,6 +537,9 @@ int mbedtls_net_poll(mbedtls_net_context *ctx, uint32_t rw, uint32_t timeout)
     }
 
     return ret;
+#else
+    return MBEDTLS_ERR_NET_POLL_FAILED;
+#endif
 }
 
 /*
@@ -521,6 +549,7 @@ void mbedtls_net_usleep(unsigned long usec)
 {
 #if defined(_WIN32)
     Sleep((usec + 999) / 1000);
+#elif defined(__PROSPERO__)
 #else
     struct timeval tv;
     tv.tv_sec  = usec / 1000000;
@@ -539,6 +568,7 @@ void mbedtls_net_usleep(unsigned long usec)
  */
 int mbedtls_net_recv(void *ctx, unsigned char *buf, size_t len)
 {
+#if !defined(__PROSPERO__)
     int ret = MBEDTLS_ERR_ERROR_CORRUPTION_DETECTED;
     int fd = ((mbedtls_net_context *) ctx)->fd;
 
@@ -573,6 +603,9 @@ int mbedtls_net_recv(void *ctx, unsigned char *buf, size_t len)
     }
 
     return ret;
+#else
+    return MBEDTLS_ERR_NET_RECV_FAILED;
+#endif
 }
 
 /*
@@ -581,6 +614,7 @@ int mbedtls_net_recv(void *ctx, unsigned char *buf, size_t len)
 int mbedtls_net_recv_timeout(void *ctx, unsigned char *buf,
                              size_t len, uint32_t timeout)
 {
+#if !defined(__PROSPERO__)
     int ret = MBEDTLS_ERR_ERROR_CORRUPTION_DETECTED;
     struct timeval tv;
     fd_set read_fds;
@@ -621,6 +655,9 @@ int mbedtls_net_recv_timeout(void *ctx, unsigned char *buf,
 
     /* This call will not block */
     return mbedtls_net_recv(ctx, buf, len);
+#else
+    return MBEDTLS_ERR_NET_RECV_FAILED;
+#endif
 }
 
 /*
@@ -628,6 +665,7 @@ int mbedtls_net_recv_timeout(void *ctx, unsigned char *buf,
  */
 int mbedtls_net_send(void *ctx, const unsigned char *buf, size_t len)
 {
+#if !defined(__PROSPERO__)
     int ret = MBEDTLS_ERR_ERROR_CORRUPTION_DETECTED;
     int fd = ((mbedtls_net_context *) ctx)->fd;
 
@@ -662,6 +700,9 @@ int mbedtls_net_send(void *ctx, const unsigned char *buf, size_t len)
     }
 
     return ret;
+#else
+    return MBEDTLS_ERR_NET_SEND_FAILED;
+#endif
 }
 
 /*
@@ -669,11 +710,13 @@ int mbedtls_net_send(void *ctx, const unsigned char *buf, size_t len)
  */
 void mbedtls_net_close(mbedtls_net_context *ctx)
 {
+#if !defined(__PROSPERO__)
     if (ctx->fd == -1) {
         return;
     }
 
     close(ctx->fd);
+#endif
 
     ctx->fd = -1;
 }
@@ -683,12 +726,14 @@ void mbedtls_net_close(mbedtls_net_context *ctx)
  */
 void mbedtls_net_free(mbedtls_net_context *ctx)
 {
+#if !defined(__PROSPERO__)
     if (ctx->fd == -1) {
         return;
     }
 
     shutdown(ctx->fd, 2);
     close(ctx->fd);
+#endif
 
     ctx->fd = -1;
 }
